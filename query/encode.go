@@ -195,6 +195,16 @@ func reflectValue(values url.Values, val reflect.Value, scope string) error {
 			continue
 		}
 
+		if opts.Contains("json") {
+			var b []byte
+			b, err := json.Marshal(sv.Interface())
+			if err != nil {
+				return err
+			}
+			values.Add(name, string(b))
+			continue
+		}
+
 		if sv.Type().Implements(encoderType) {
 			// if sv is a nil pointer and the custom encoder is defined on a non-pointer
 			// method receiver, set sv to the zero value of the underlying type
@@ -261,18 +271,8 @@ func reflectValue(values url.Values, val reflect.Value, scope string) error {
 		}
 
 		if sv.Kind() == reflect.Struct {
-			if opts.Contains("json") {
-				var b []byte
-				b, err := json.Marshal(sv.Interface())
-				if err != nil {
-					return err
-				}
-
-				values.Add(name, valueString(reflect.ValueOf(string(b)), opts, sf))
-			} else {
-				if err := reflectValue(values, sv, name); err != nil {
-					return err
-				}
+			if err := reflectValue(values, sv, name); err != nil {
+				return err
 			}
 			continue
 		}
